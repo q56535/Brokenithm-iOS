@@ -1,0 +1,74 @@
+name: Build win-client
+
+on:
+  push:
+    branches:
+      - win-client
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-win-client-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Release / Any CPU
+    runs-on: windows-2022
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout pushed commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v3
+        with:
+          nuget-version: latest
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v3
+        with:
+          msbuild-architecture: x64
+
+      - name: Restore NuGet packages
+        run: nuget restore Brokenithm-Evolved-iOS.sln -NonInteractive
+
+      - name: Build Release
+        shell: pwsh
+        run: |
+          msbuild Brokenithm-Evolved-iOS.sln `
+            /m `
+            /t:Rebuild `
+            /p:Configuration=Release `
+            '/p:Platform=Any CPU' `
+            /p:SignManifests=false `
+            /p:GenerateManifests=false `
+            /verbosity:minimal
+
+      - name: Verify output
+        shell: pwsh
+        run: |
+          $output = 'Brokenithm-Evolved-iOS\bin\Release'
+          $exe = Join-Path $output 'Brokenithm-Evolved-iOS.exe'
+
+          if (-not (Test-Path $exe)) {
+            throw "Build output not found: $exe"
+          }
+
+          Get-ChildItem $output -Recurse | Format-Table FullName, Length
+
+      - name: Upload Windows build
+        uses: actions/upload-artifact@v7
+        with:
+          name: Brokenithm-win-client-${{ github.run_number }}
+          path: Brokenithm-Evolved-iOS\bin\Release\**
+          if-no-files-found: error
+          retention-days: 30
+YAML
+cp /mnt/data/.github/workflows/build-win-client.yml /mnt/data/build-win-client.yml
+sed -n '1,220p' /mnt/data/build-win-client.yml
