@@ -69,6 +69,3 @@ jobs:
           path: Brokenithm-Evolved-iOS\bin\Release\**
           if-no-files-found: error
           retention-days: 30
-YAML
-cp /mnt/data/.github/workflows/build-win-client.yml /mnt/data/build-win-client.yml
-sed -n '1,220p' /mnt/data/build-win-client.yml
